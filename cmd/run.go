@@ -26,6 +26,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -454,9 +455,23 @@ a commandline interface for interacting with it.`,
 				Metrics: engine.Metrics,
 				Time:    engine.Executor.GetTime(),
 			}
-			// TODO: add json summary later
-			switch {
-			default:
+			if conf.ReportSummary.Valid {
+				var w io.Writer = stdout
+				if conf.ReportSummary.String != "" {
+					f, err := os.Create(conf.ReportSummary.String)
+					if err != nil {
+						logrus.Error("failed to create report file")
+						return err
+					}
+					w = f
+					defer func() {
+						if err := f.Close(); err != nil {
+							panic(err)
+						}
+					}()
+				}
+				ui.SummarizeJSON(w, data)
+			} else {
 				ui.Summarize(stdout, "", data)
 			}
 
