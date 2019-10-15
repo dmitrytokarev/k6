@@ -211,6 +211,9 @@ a commandline interface for interacting with it.`,
 		if conf.NoSummary.Valid {
 			engine.NoSummary = conf.NoSummary.Bool
 		}
+		if conf.SummaryExport.Valid {
+			engine.SummaryExport = conf.SummaryExport.String != ""
+		}
 
 		// Create a collector and assign it to the engine if requested.
 		fprintf(stdout, "%s   collector\r", initBar.String())
@@ -446,36 +449,42 @@ a commandline interface for interacting with it.`,
 			logrus.Warn("No data generated, because no script iterations finished, consider making the test duration longer")
 		}
 
+		data := ui.SummaryData{
+			Opts:    conf.Options,
+			Root:    engine.Executor.GetRunner().GetDefaultGroup(),
+			Metrics: engine.Metrics,
+			Time:    engine.Executor.GetTime(),
+		}
+
 		// Print the end-of-test summary.
 		if !conf.NoSummary.Bool {
 			fprintf(stdout, "\n")
-			data := ui.SummaryData{
-				Opts:    conf.Options,
-				Root:    engine.Executor.GetRunner().GetDefaultGroup(),
-				Metrics: engine.Metrics,
-				Time:    engine.Executor.GetTime(),
-			}
-			if conf.SummaryExport.Valid {
-				var w io.Writer = stdout
-				if conf.SummaryExport.String != "" {
-					f, err := os.Create(conf.SummaryExport.String)
-					if err != nil {
-						logrus.Error("failed to create report file")
-						return err
-					}
-					w = f
-					defer func() {
-						if err := f.Close(); err != nil {
-							panic(err)
-						}
-					}()
-				}
-				ui.SummarizeJSON(w, data)
-			} else {
-				ui.Summarize(stdout, "", data)
-			}
-
+			ui.Summarize(stdout, "", data)
 			fprintf(stdout, "\n")
+		}
+
+		if conf.SummaryExport.Valid {
+			var w io.Writer
+			switch conf.SummaryExport.String {
+			case "": // disable, do nothing
+			case "/dev/stdout":
+				w = stdout
+			default:
+				f, err := os.Create(conf.SummaryExport.String)
+				if err != nil {
+					logrus.Error("failed to create report file")
+					return err
+				}
+				w = f
+				defer func() {
+					if err := f.Close(); err != nil {
+						logrus.WithError(err).Fatal("failed to close summary output file")
+					}
+				}()
+			}
+			if w != nil {
+				ui.SummarizeJSON(w, data)
+			}
 		}
 
 		if conf.Linger.Bool {
