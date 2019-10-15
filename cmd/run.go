@@ -26,7 +26,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -463,27 +462,17 @@ a commandline interface for interacting with it.`,
 			fprintf(stdout, "\n")
 		}
 
-		if conf.SummaryExport.Valid {
-			var w io.Writer
-			switch conf.SummaryExport.String {
-			case "": // disable, do nothing
-			case "/dev/stdout":
-				w = stdout
-			default:
-				f, err := os.Create(conf.SummaryExport.String)
-				if err != nil {
-					logrus.Error("failed to create report file")
-					return err
-				}
-				w = f
+		if conf.SummaryExport.Valid && conf.SummaryExport.String != "" {
+			f, err := os.Create(conf.SummaryExport.String)
+			if err != nil {
+				logrus.Error("failed to create summary export file")
+			} else {
 				defer func() {
 					if err := f.Close(); err != nil {
 						logrus.WithError(err).Fatal("failed to close summary output file")
 					}
 				}()
-			}
-			if w != nil {
-				ui.SummarizeJSON(w, data)
+				ui.SummarizeJSON(f, data)
 			}
 		}
 
