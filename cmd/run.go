@@ -455,10 +455,10 @@ a commandline interface for interacting with it.`,
 				Metrics: engine.Metrics,
 				Time:    engine.Executor.GetTime(),
 			}
-			if conf.ReportSummary.Valid {
+			if conf.SummaryExport.Valid {
 				var w io.Writer = stdout
-				if conf.ReportSummary.String != "" {
-					f, err := os.Create(conf.ReportSummary.String)
+				if conf.SummaryExport.String != "" {
+					f, err := os.Create(conf.SummaryExport.String)
 					if err != nil {
 						logrus.Error("failed to create report file")
 						return err

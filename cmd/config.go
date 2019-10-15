@@ -54,9 +54,8 @@ func configFlagSet() *pflag.FlagSet {
 	flags.Bool("no-usage-report", false, "don't send anonymous stats to the developers")
 	flags.Bool("no-thresholds", false, "don't run thresholds")
 	flags.Bool("no-summary", false, "don't show the summary at the end of the test")
-	flags.StringP(
-		"report-summary",
-		"r",
+	flags.String(
+		"summary-export",
 		"",
 		"output summary to file in json format, empty string means output to standard out",
 	)
@@ -71,7 +70,7 @@ type Config struct {
 	NoUsageReport null.Bool   `json:"noUsageReport" envconfig:"no_usage_report"`
 	NoThresholds  null.Bool   `json:"noThresholds" envconfig:"no_thresholds"`
 	NoSummary     null.Bool   `json:"noSummary" envconfig:"no_summary"`
-	ReportSummary null.String `json:"reportSummary" envconfig:"report_summary"`
+	SummaryExport null.String `json:"summaryExport" envconfig:"summary_export"`
 
 	Collectors struct {
 		InfluxDB influxdb.Config `json:"influxdb"`
@@ -100,8 +99,8 @@ func (c Config) Apply(cfg Config) Config {
 	if cfg.NoSummary.Valid {
 		c.NoSummary = cfg.NoSummary
 	}
-	if cfg.ReportSummary.Valid {
-		c.ReportSummary = cfg.ReportSummary
+	if cfg.SummaryExport.Valid {
+		c.SummaryExport = cfg.SummaryExport
 	}
 	c.Collectors.InfluxDB = c.Collectors.InfluxDB.Apply(cfg.Collectors.InfluxDB)
 	c.Collectors.Cloud = c.Collectors.Cloud.Apply(cfg.Collectors.Cloud)
@@ -129,7 +128,7 @@ func getConfig(flags *pflag.FlagSet) (Config, error) {
 		NoUsageReport: getNullBool(flags, "no-usage-report"),
 		NoThresholds:  getNullBool(flags, "no-thresholds"),
 		NoSummary:     getNullBool(flags, "no-summary"),
-		ReportSummary: getNullString(flags, "report-summary"),
+		SummaryExport: getNullString(flags, "summary-export"),
 	}, nil
 }
 
